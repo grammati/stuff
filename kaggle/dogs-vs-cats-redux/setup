@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Prerequisite:
+# pip install kaggle-cli
+# kg config -g -u my-kaggle-username -p my-kaggle-password
+kg config -c dogs-vs-cats-redux-kernels-edition \
+    && mkdir -p ~/.datasets/kaggle/dogs-vs-cats-redux \
+    && cd ~/.datasets/kaggle/dogs-vs-cats-redux \
+    && kg download \
+    && unzip -q test.zip \
+    && unzip -q train.zip \
+    && cd - \
+    && echo 'DONE!'
