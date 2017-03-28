@@ -119,7 +119,19 @@ def svm_loss_vectorized(W, X, y, reg):
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  pass
+
+  # Better names for the dimensions:
+  N = X.shape[0]
+  D = X.shape[1]
+  C = y.shape[0]
+
+  scores = X.dot(W) # (N,D) . (D,C) == (N,C)
+  correct_class_scores = scores[np.arange(N), y] # (N,)
+  margins = scores - correct_class_scores.reshape((-1,1)) + 1 # (N,C)
+  # Correct for overcounting when score == correct (i.e. correct for the "+ 1" above)
+  margins[np.arange(N), y] = 0
+  loss = np.sum(np.maximum(margins, 0)) / N
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -134,7 +146,23 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
-  pass
+
+  # For each of the N samples X[i], margin_counts[i] will be a count of the
+  # number of classes whose score contributes to the loss.
+  margin_counts = np.sum(margins > 0, axis=1) # (N,)
+
+  # The following lines of code are far and away the most difficult I have ever
+  # written. I have spent days figuring them out, and filled pages and pages of
+  # a notebook with diagrams, and I'm still not sure I really understand why
+  # this works. Somewhat unsatisfyingly, the answer is "because the dimensions
+  # work out". That seems to be how a lot my numpy work is done - if the
+  # dimensions match up, then I assume it's right. I really hope this stuff
+  # eventually gets easier.
+  xcounts = (margins > 0).astype('int') # why?  (N,C)
+  xcounts[np.arange(N), y] -= margin_counts  # this one I think I understand
+  dW = X.T.dot(xcounts)  # (D,N) . (N,C) == (D,C)
+  dW /= N
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
