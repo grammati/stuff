@@ -37,7 +37,7 @@ def svm_loss_naive(W, X, y, reg):
     # we predict a higher probability that the image of of that class
     scores = im.dot(W) # (D,) . (D,C) == (C,)
 
-    for j in range(num_classes):
+    for j in xrange(num_classes):
       # SVM loss is the sum of incorrect class scores that exceed the correct
       # class' score by more than some margin delta. Because of that, we can
       # skip ahead when j is the correct class of the current image.

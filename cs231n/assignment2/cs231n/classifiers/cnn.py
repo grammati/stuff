@@ -52,7 +52,7 @@ class ThreeLayerConvNet(object):
     #                             END OF YOUR CODE                             #
     ############################################################################
 
-    for k, v in self.params.items():
+    for k, v in self.params.iteritems():
       self.params[k] = v.astype(dtype)
      
  
