@@ -17,16 +17,16 @@ class Solver(object):
   model, dataset, and various optoins (learning rate, batch size, etc) to the
   constructor. You will then call the train() method to run the optimization
   procedure and train the model.
-  
+
   After the train() method returns, model.params will contain the parameters
   that performed best on the validation set over the course of training.
   In addition, the instance variable solver.loss_history will contain a list
   of all losses encountered during training and the instance variables
   solver.train_acc_history and solver.val_acc_history will be lists containing
   the accuracies of the model on the training and validation set at each epoch.
-  
+
   Example usage might look something like this:
-  
+
   data = {
     'X_train': # training data
     'y_train': # training labels
@@ -74,7 +74,7 @@ class Solver(object):
   def __init__(self, model, data, **kwargs):
     """
     Construct a new Solver instance.
-    
+
     Required arguments:
     - model: A model object conforming to the API described above
     - data: A dictionary of training and validation data with the following:
@@ -82,7 +82,7 @@ class Solver(object):
       'X_val': Array of shape (N_val, d_1, ..., d_k) giving validation images
       'y_train': Array of shape (N_train,) giving labels for training images
       'y_val': Array of shape (N_val,) giving labels for validation images
-      
+
     Optional arguments:
     - update_rule: A string giving the name of an update rule in optim.py.
       Default is 'sgd'.
@@ -105,7 +105,7 @@ class Solver(object):
     self.y_train = data['y_train']
     self.X_val = data['X_val']
     self.y_val = data['y_val']
-    
+
     # Unpack keyword arguments
     self.update_rule = kwargs.pop('update_rule', 'sgd')
     self.optim_config = kwargs.pop('optim_config', {})
@@ -144,10 +144,7 @@ class Solver(object):
     self.val_acc_history = []
 
     # Make a deep copy of the optim_config for each parameter
-    self.optim_configs = {}
-    for p in self.model.params:
-      d = {k: v for k, v in self.optim_config.iteritems()}
-      self.optim_configs[p] = d
+    self.optim_configs = {p: self.optim_config.copy() for p in self.model.params}
 
 
   def _step(self):
@@ -163,6 +160,10 @@ class Solver(object):
 
     # Compute loss and gradient
     loss, grads = self.model.loss(X_batch, y_batch)
+    if np.isinf(loss):
+      raise Exception('INF')
+    if np.isnan(loss):
+      raise Exception('NaN')
     self.loss_history.append(loss)
 
     # Perform a parameter update
@@ -177,7 +178,7 @@ class Solver(object):
   def check_accuracy(self, X, y, num_samples=None, batch_size=100):
     """
     Check accuracy of the model on the provided data.
-    
+
     Inputs:
     - X: Array of data, of shape (N, d_1, ..., d_k)
     - y: Array of labels, of shape (N,)
@@ -185,12 +186,12 @@ class Solver(object):
       on num_samples datapoints.
     - batch_size: Split X and y into batches of this size to avoid using too
       much memory.
-      
+
     Returns:
     - acc: Scalar giving the fraction of instances that were correctly
       classified by the model.
     """
-    
+
     # Maybe subsample the data
     N = X.shape[0]
     if num_samples is not None and N > num_samples:
@@ -242,7 +243,7 @@ class Solver(object):
       # Check train and val accuracy on the first iteration, the last
       # iteration, and at the end of each epoch.
       first_it = (t == 0)
-      last_it = (t == num_iterations + 1)
+      last_it = (t == num_iterations - 1)
       if first_it or last_it or epoch_end:
         train_acc = self.check_accuracy(self.X_train, self.y_train,
                                         num_samples=1000)
@@ -257,10 +258,7 @@ class Solver(object):
         # Keep track of the best model
         if val_acc > self.best_val_acc:
           self.best_val_acc = val_acc
-          self.best_params = {}
-          for k, v in self.model.params.iteritems():
-            self.best_params[k] = v.copy()
+          self.best_params = {k: v.copy() for k,v in self.model.params.iteritems()}
 
     # At the end of training swap the best params into the model
     self.model.params = self.best_params
-
