@@ -486,10 +486,6 @@ def conv_backward_naive(dout, cache):
   db = dout.sum(axis=(0, 2, 3))
 
   # dw needs shape (F, C, Hw, Ww)
-  # We are backproping through a multiplication (sort-of) of:
-  #  w (F, C, Hw, Ww) with
-  #  x (N, C, Hw, Ww)
-  # so dw is, handwavingly, dout * x
   dw = np.zeros_like(w)
   x_padded = np.pad(x, ((0,0),(0,0),(pad,pad),(pad,pad)), mode='constant', constant_values=0)
   for row in range(Hout):
@@ -501,8 +497,21 @@ def conv_backward_naive(dout, cache):
       dw += (dout[      :, :,          np.newaxis, row,    col].reshape((N,F,1,1,1))
              * x_padded[:, np.newaxis, :,          r:r+Hw, c:c+Ww]).sum(axis=0)
 
-  # dx
-  dx = np.zeros_like(x)
+  # dx needs shape (N, C, H, W)
+  dxp = np.zeros_like(x_padded)
+  for row in range(Hout):
+    for col in range(Wout):
+      r = row * stride
+      c = col * stride
+
+      #             N           F  C           H    W
+      dx_rc = (dout[:,          :, np.newaxis, row, col].reshape((N,F,1,1,1))
+                * w[np.newaxis, :, :,          :,   :]
+               ).sum(axis=1)
+
+      dxp[:, :, r:r+Hw, c:c+Ww] += dx_rc
+
+  dx = dxp[:, :, pad:-pad, pad:-pad]
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
