@@ -247,6 +247,9 @@ class FullyConnectedNet(object):
       w = self.params['W%d' % n]
       b = self.params['b%d' % n]
       input,cache = affine_relu_forward(input, w, b)
+      if self.use_dropout:
+        input,dropout_cache = dropout_forward(input, self.dropout_param)
+        caches['dropout_%d' % n] = dropout_cache
       caches[n] = cache
     n = self.num_layers
     w = self.params['W%d' % n]
@@ -281,6 +284,8 @@ class FullyConnectedNet(object):
     grads['W%d' % n] = dW
     grads['b%d' % n] = db
     for n in range(self.num_layers - 1, 0, -1):
+      if self.use_dropout:
+        grad = dropout_backward(grad, caches['dropout_%d' % n])
       grad, dW, db = affine_relu_backward(grad, caches[n])
       grads['W%d' % n] = dW
       grads['b%d' % n] = db
