@@ -483,11 +483,24 @@ def conv_backward_naive(dout, cache):
   pad = conv_param['pad']
 
   # db needs shape (F,)
+  # Since adding b is the last step in the forward pass, and is just an add,
+  # all we need to do is propagate the incoming gradient to db (and make it the
+  # right shape)
   db = dout.sum(axis=(0, 2, 3))
+
+  # The output is calculated (handwavingly) as out = x * w, so dw is roughly
+  # dout * x, and dx is roughly dout * w, except that we have to do that
+  # calculation for each (row,col) position at which we applied the kernels in
+  # the forward pass.
 
   # dw needs shape (F, C, Hw, Ww)
   dw = np.zeros_like(w)
+
+  # dx needs shape (N, C, H, W)
   x_padded = np.pad(x, ((0,0),(0,0),(pad,pad),(pad,pad)), mode='constant', constant_values=0)
+  # Also make a padded version of dx to make the indexing easier
+  dxp = np.zeros_like(x_padded)
+
   for row in range(Hout):
     for col in range(Wout):
       r = row * stride
@@ -496,13 +509,6 @@ def conv_backward_naive(dout, cache):
       #                 N  F           C           H       W
       dw += (dout[      :, :,          np.newaxis, row,    col].reshape((N,F,1,1,1))
              * x_padded[:, np.newaxis, :,          r:r+Hw, c:c+Ww]).sum(axis=0)
-
-  # dx needs shape (N, C, H, W)
-  dxp = np.zeros_like(x_padded)
-  for row in range(Hout):
-    for col in range(Wout):
-      r = row * stride
-      c = col * stride
 
       #             N           F  C           H    W
       dx_rc = (dout[:,          :, np.newaxis, row, col].reshape((N,F,1,1,1))
