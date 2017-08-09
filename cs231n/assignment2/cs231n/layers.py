@@ -543,7 +543,15 @@ def max_pool_forward_naive(x, pool_param):
   #############################################################################
   # TODO: Implement the max pooling forward pass                              #
   #############################################################################
-  pass
+  N,C,H,W = x.shape
+  ph, pw, ps = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
+  Hout = (H - ph) / ps + 1
+  Wout = (W - pw) / ps + 1
+  out = np.zeros((N, C, Hout, Wout), dtype=np.float)
+  for hi in range(Hout):
+    for wi in range(Wout):
+      window = x[:, :, hi*ps : hi*ps + ps, wi*ps : wi*ps + ps]
+      out[:, :, hi, wi] = np.max(window.reshape((N, C, -1)), axis=2)
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -566,7 +574,17 @@ def max_pool_backward_naive(dout, cache):
   #############################################################################
   # TODO: Implement the max pooling backward pass                             #
   #############################################################################
-  pass
+  x, pool_param = cache
+  ph, pw, ps = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
+  dx = np.zeros_like(x)
+  N, C, Hout, Wout = dout.shape
+  for hi in range(Hout):
+    for wi in range(Wout):
+      grad = dout[:, :, hi, wi]
+      window = x[:, :, hi*ps : hi*ps + ps, wi*ps : wi*ps + ps]
+      max_val = np.max(window.reshape((N, C, -1)), axis=2)
+      hivals = (window == max_val).reshape((N,C,ph,pw))
+      dx[:, :, hi*ps : hi*ps + ps, wi*ps : wi*ps + ps] += grad * hivals
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
