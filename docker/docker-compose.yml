@@ -1,0 +1,9 @@
+version: '3.2'
+services:
+  notebook:
+    build: .
+    command: start.sh jupyter lab
+    ports:
+      - "8888:8888"
+    volumes:
+      - /Users/chperki/projects/stuff:/home/jovyan/stuff
